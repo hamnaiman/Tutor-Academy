@@ -10,6 +10,7 @@ import hpp from "hpp";
 
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import studentRoutes from "./routes/studentRoutes.js";
 
 dotenv.config();
 
@@ -70,7 +71,8 @@ app.use(
 );
 
 /* ================= ROUTES ================= */
-app.use("/api/auth", authRoutes); // ✅ correct
+app.use("/api/auth", authRoutes); 
+app.use("/api/student", studentRoutes);
 
 /* ================= HEALTH CHECK ================= */
 app.get("/", (req, res) => {

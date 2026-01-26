@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import User from "../models/User.js";
+import TutorProfile from "../models/TutorModel.js";
 import generateToken from "../utils/generateToken.js";
 import sendEmail from "../utils/sendEmail.js";
 
@@ -27,6 +28,7 @@ export const registerStudent = async (req, res) => {
       password,
       role: "student",
       isApproved: true,
+      emailVerified: false, // 🔒 optional but ready
     });
 
     res.status(201).json({
@@ -47,38 +49,72 @@ export const registerStudent = async (req, res) => {
 /* ================= REGISTER TUTOR ================= */
 export const registerTutor = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const {
+      name,
+      email,
+      password,
+      phone,
+      city,
+      qualifications,
+      subjects,
+      grades,
+      experienceYears,
+      bio,
+    } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+    // Required fields
+    if (!name || !email || !password || !phone || !city) {
+      return res.status(400).json({ message: "Required fields missing (name, email, password, phone, city)" });
     }
 
     if (password.length < 8) {
       return res.status(400).json({ message: "Password too short" });
     }
 
+    // Check if user exists
     const exists = await User.findOne({ email });
     if (exists) {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    await User.create({
+    // Create User
+    const user = await User.create({
       name,
       email,
       password,
       role: "tutor",
       isApproved: false,
+      emailVerified: false,
+    });
+
+    // Format qualifications
+    const formattedQualifications = (qualifications || []).map(q =>
+      typeof q === "string" ? { degree: q, institute: "", year: "" } : q
+    );
+
+    // Create TutorProfile
+    await TutorProfile.create({
+      user: user._id,
+      phone,
+      city,
+      qualifications: formattedQualifications,
+      subjects: subjects || [],
+      grades: grades || [],
+      experienceYears: experienceYears || 0,
+      bio: bio || "",
+      isProfileCompleted: true,
     });
 
     res.status(201).json({
       success: true,
-      message: "Application submitted. Await admin approval",
+      message: "Tutor registered. Await admin approval.",
     });
   } catch (err) {
     console.error("Register Tutor Error:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
 
 /* ================= LOGIN ================= */
 export const login = async (req, res) => {
@@ -95,8 +131,32 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    /* 🔒 BLOCKED USER CHECK */
+    if (user.isBlocked) {
+      return res.status(403).json({
+        message: "Your account has been blocked by admin",
+      });
+    }
+
+    /* 🔒 EMAIL VERIFICATION CHECK (Tutor/Admin) */
+    if (user.role !== "student" && !user.emailVerified) {
+      return res.status(403).json({
+        message: "Please verify your email first",
+      });
+    }
+
+    /* 🔒 TUTOR APPROVAL CHECK */
     if (user.role === "tutor" && !user.isApproved) {
-      return res.status(403).json({ message: "Tutor not approved yet" });
+      return res.status(403).json({
+        message: "Your account is pending admin approval",
+      });
+    }
+
+    let profileCompleted = true;
+
+    if (user.role === "tutor") {
+      const profile = await TutorProfile.findOne({ user: user._id });
+      profileCompleted = profile?.isProfileCompleted || false;
     }
 
     res.json({
@@ -106,6 +166,7 @@ export const login = async (req, res) => {
         id: user._id,
         name: user.name,
         role: user.role,
+        profileCompleted,
       },
     });
   } catch (err) {
@@ -154,6 +215,12 @@ export const forgotPassword = async (req, res) => {
 /* ================= RESET PASSWORD ================= */
 export const resetPassword = async (req, res) => {
   try {
+    const { password } = req.body;
+
+    if (!password || password.length < 8) {
+      return res.status(400).json({ message: "Password too short" });
+    }
+
     const resetPasswordToken = crypto
       .createHash("sha256")
       .update(req.params.token)
@@ -168,11 +235,7 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
-    if (req.body.password.length < 8) {
-      return res.status(400).json({ message: "Password too short" });
-    }
-
-    user.password = req.body.password;
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 

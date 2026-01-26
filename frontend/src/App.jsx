@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
-/* Auth */
+/* Auth Pages */
 import Login from "./pages/Auth/Login";
 import StudentRegister from "./pages/Auth/StudentRegister";
 import TutorRegister from "./pages/Auth/TutorRegister";
@@ -14,31 +14,42 @@ import StudentDashboard from "./pages/Student/Dashboard";
 import TutorDashboard from "./pages/Tutor/Dashboard";
 import AdminDashboard from "./pages/Admin/Dashboard";
 
+/* Student Pages */
+import CreateRequirement from "./pages/Student/CreateRequirement";
+import MyRequirements from "./pages/Student/MyRequirements";
+
+/* Public */
+import PublicDashboard from "./pages/PublicDashboard";
+
 export default function App() {
   return (
     <AuthProvider>
       <Routes>
-        {/* Default */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* ================= PUBLIC ================= */}
+        <Route path="/" element={<PublicDashboard />} />
 
-        {/* Auth */}
+        {/* ================= AUTH ================= */}
         <Route path="/login" element={<Login />} />
         <Route path="/register/student" element={<StudentRegister />} />
         <Route path="/register/tutor" element={<TutorRegister />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-        {/* Student */}
+        {/* ================= STUDENT ================= */}
         <Route
-          path="/student/dashboard"
+          path="/student"
           element={
             <ProtectedRoute role="student">
               <StudentDashboard />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<Navigate to="create" replace />} />
+          <Route path="create" element={<CreateRequirement />} />
+          <Route path="my-requirements" element={<MyRequirements />} />
+        </Route>
 
-        {/* Tutor */}
+        {/* ================= TUTOR ================= */}
         <Route
           path="/tutor/dashboard"
           element={
@@ -48,7 +59,7 @@ export default function App() {
           }
         />
 
-        {/* Admin */}
+        {/* ================= ADMIN ================= */}
         <Route
           path="/admin/dashboard"
           element={
@@ -58,11 +69,11 @@ export default function App() {
           }
         />
 
-        {/* 404 */}
+        {/* ================= 404 ================= */}
         <Route
           path="*"
           element={
-            <div className="text-center mt-20 text-xl">
+            <div className="text-center mt-20 text-xl text-slate-600">
               404 | Page Not Found
             </div>
           }
