@@ -4,19 +4,17 @@ import {
   createTutorRequest,
   getMyRequests,
   updateRequest,
-  deleteRequest,
+  deleteRequest
 } from "../controllers/studentRequestController.js";
 
 const router = express.Router();
 
-router.use(protect);
-router.use(authorize("student"));
+router.use(protect, authorize("student"));
 
-// CRUD for Tutor Requests
-router.post("/requests", createTutorRequest);
-router.get("/requests", getMyRequests);
-router.put("/requests/:id", updateRequest);
-router.delete("/requests/:id", deleteRequest);
+// CRUD for requests
+router.post("/", createTutorRequest);        // 3.7: Create
+router.get("/", getMyRequests);             // 3.8: View status
+router.put("/:id", updateRequest);          // Edit
+router.delete("/:id", deleteRequest);       // Delete
 
 export default router;
- 

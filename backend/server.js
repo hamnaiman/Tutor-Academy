@@ -9,12 +9,29 @@ import mongoSanitize from "express-mongo-sanitize";
 import hpp from "hpp";
 
 import connectDB from "./config/db.js";
+
+// ROUTES
 import authRoutes from "./routes/authRoutes.js";
+
+// ADMIN
+import adminRoutes from "./routes/adminRoutes.js";
+
+// STUDENT
+import studentDashboardRoutes from "./routes/studentDashboardRoutes.js";
+import studentProfileRoutes from "./routes/studentProfileRoutes.js";
+import studentRequestRoutes from './routes/studentRequestRoutes.js';
 import studentRoutes from "./routes/studentRoutes.js";
+
+// TUTOR
+import tutorDashboardRoutes from "./routes/tutorDashboardRoutes.js";
+import tutorProfileRoutes from "./routes/tutorProfileRoutes.js";
+import tutorPostRoutes from "./routes/tutorPostRoutes.js";
+import tutorInteractionRoutes from "./routes/tutorInteractionRoutes.js";
+
 
 dotenv.config();
 
-/* ================= DB ================= */
+/* ================= DATABASE ================= */
 connectDB();
 
 const app = express();
@@ -44,8 +61,8 @@ if (process.env.NODE_ENV === "development") {
 
 /* ================= RATE LIMITING ================= */
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // max 100 requests per window
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -71,28 +88,44 @@ app.use(
 );
 
 /* ================= ROUTES ================= */
-app.use("/api/auth", authRoutes); 
+
+// AUTH
+app.use("/api/auth", authRoutes);
+
+// ADMIN
+app.use("/api/admin", adminRoutes);
+
+// STUDENT
+app.use("/api/student/dashboard", studentDashboardRoutes);
+app.use("/api/student/profile", studentProfileRoutes);
+app.use("/api/student/requests", studentRequestRoutes);
 app.use("/api/student", studentRoutes);
+
+// TUTOR
+app.use("/api/tutor/dashboard", tutorDashboardRoutes);
+app.use("/api/tutor/profile", tutorProfileRoutes);
+app.use("/api/tutor/posts", tutorPostRoutes);
+app.use("/api/tutor/requests", tutorInteractionRoutes);
 
 /* ================= HEALTH CHECK ================= */
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "Tutor Academy API is running 🚀",
+    message: "Tutor Academy API is running ",
   });
 });
 
 /* ================= GLOBAL ERROR HANDLER ================= */
 app.use((err, req, res, next) => {
-  console.error("🔥 Error:", err.message);
+  console.error(" Error:", err.message);
   res.status(err.statusCode || 500).json({
     success: false,
     message: err.message || "Internal Server Error",
   });
 });
 
-/* ================= SERVER ================= */
+/* ================= START SERVER ================= */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT}`)
+  console.log(` Server running on port ${PORT}`)
 );

@@ -1,5 +1,14 @@
 import mongoose from "mongoose";
 
+const qualificationSchema = new mongoose.Schema(
+  {
+    degree: { type: String, trim: true },
+    institute: { type: String, trim: true },
+    year: { type: String, trim: true },
+  },
+  { _id: false }
+);
+
 const tutorProfileSchema = new mongoose.Schema(
   {
     user: {
@@ -9,24 +18,27 @@ const tutorProfileSchema = new mongoose.Schema(
       unique: true,
     },
 
+    profileImage: {
+      type: String, // Cloudinary / S3 URL
+      default: null,
+    },
+
     phone: {
       type: String,
       required: true,
+      trim: true,
     },
 
     city: {
       type: String,
-      required: true, // 📍 student location matching ke liye important
+      required: true,
       trim: true,
     },
 
-    qualifications: [
-      {
-        degree: String,
-        institute: String,
-        year: String,
-      },
-    ],
+    qualifications: {
+      type: [qualificationSchema],
+      default: [],
+    },
 
     subjects: {
       type: [String],
@@ -41,15 +53,24 @@ const tutorProfileSchema = new mongoose.Schema(
     experienceYears: {
       type: Number,
       default: 0,
+      min: 0,
+    },
+
+    teachingMode: {
+      type: String,
+      enum: ["online", "physical", "both"],
+      default: "online",
     },
 
     bio: {
       type: String,
       trim: true,
+      maxlength: 500,
+      default: "",
     },
 
     certificates: {
-      type: [String], // file URLs
+      type: [String], // URLs
       default: [],
     },
 

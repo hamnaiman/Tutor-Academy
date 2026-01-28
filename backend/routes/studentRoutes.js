@@ -4,14 +4,12 @@ import { getAllTutors, sendRequestToTutor } from "../controllers/studentControll
 
 const router = express.Router();
 
-/* ===== STUDENT PROTECTED ROUTES ===== */
-router.use(protect);
-router.use(authorize("student")); // Only students can access these routes
+router.use(protect, authorize("student"));
 
-// Search & View Tutors
+// 3.9: View tutor list
 router.get("/tutors", getAllTutors);
 
-// Send Request to Tutor (requestId + tutorId needed)
+// 3.7/3.12: Send request to tutor
 router.post("/requests/:requestId/:tutorId/apply", sendRequestToTutor);
 
 export default router;

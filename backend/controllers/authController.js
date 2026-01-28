@@ -3,18 +3,36 @@ import User from "../models/User.js";
 import TutorProfile from "../models/TutorModel.js";
 import generateToken from "../utils/generateToken.js";
 import sendEmail from "../utils/sendEmail.js";
+import StudentProfile from "../models/StudentProfile.js";
 
 /* ================= REGISTER STUDENT ================= */
 export const registerStudent = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const {
+      name,
+      email,
+      password,
+      studentClass,
+      subjects,
+      city,
+      contact,
+    } = req.body;
 
-    if (!name || !email || !password) {
+    // Validation
+    if (
+      !name ||
+      !email ||
+      !password ||
+      !studentClass ||
+      !subjects ||
+      !city ||
+      !contact
+    ) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
     if (password.length < 8) {
-      return res.status(400).json({ message: "Password too short" });
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
     }
 
     const exists = await User.findOne({ email });
@@ -22,23 +40,27 @@ export const registerStudent = async (req, res) => {
       return res.status(400).json({ message: "Email already registered" });
     }
 
+    // Create User (Pending Approval)
     const user = await User.create({
       name,
       email,
       password,
       role: "student",
-      isApproved: true,
-      emailVerified: false, // 🔒 optional but ready
+      isApproved: false, // 🔒 ADMIN APPROVAL REQUIRED
+    });
+
+    // Create Student Profile
+    await StudentProfile.create({
+      user: user._id,
+      studentClass,
+      subjects,
+      city,
+      contact,
     });
 
     res.status(201).json({
       success: true,
-      token: generateToken(user),
-      user: {
-        id: user._id,
-        name: user.name,
-        role: user.role,
-      },
+      message: "Registration successful. Await admin approval.",
     });
   } catch (err) {
     console.error("Register Student Error:", err);
