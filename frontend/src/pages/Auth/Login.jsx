@@ -20,13 +20,24 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const user = await login(form);
+      const user = await login(form); // user is always defined now
 
-      if (user.role === "student") navigate("/student/dashboard");
-      else if (user.role === "tutor") navigate("/tutor/dashboard");
-      else if (user.role === "admin") navigate("/admin/dashboard");
+      // Navigate based on user role
+      switch (user.role) {
+        case "student":
+          navigate("/student/dashboard");
+          break;
+        case "tutor":
+          navigate("/tutor/dashboard");
+          break;
+        case "admin":
+          navigate("/admin/dashboard");
+          break;
+        default:
+          setError("Unknown user role");
+      }
     } catch (err) {
-      setError(err?.message || "Invalid email or password");
+      setError(err.message || "Invalid email or password");
     } finally {
       setLoading(false);
     }
@@ -35,7 +46,6 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-        {/* Heading */}
         <h2 className="text-3xl font-bold text-center text-gray-800">
           Welcome Back 👋
         </h2>
@@ -43,14 +53,12 @@ export default function Login() {
           Login to your account
         </p>
 
-        {/* Error */}
         {error && (
           <div className="mt-4 bg-red-100 text-red-700 px-4 py-2 rounded">
             {error}
           </div>
         )}
 
-        {/* Form */}
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
@@ -61,9 +69,8 @@ export default function Login() {
               required
               placeholder="you@example.com"
               className="mt-1 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              onChange={(e) =>
-                setForm({ ...form, email: e.target.value })
-              }
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </div>
 
@@ -76,9 +83,8 @@ export default function Login() {
               required
               placeholder="••••••••"
               className="mt-1 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              onChange={(e) =>
-                setForm({ ...form, password: e.target.value })
-              }
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
           </div>
 
@@ -91,24 +97,17 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Links */}
         <div className="mt-6 text-center space-y-2 text-sm">
           <p>
             New Student?{" "}
-            <Link
-              to="/register/student"
-              className="text-blue-600 hover:underline"
-            >
+            <Link to="/register/student" className="text-blue-600 hover:underline">
               Register
             </Link>
           </p>
 
           <p>
             Want to teach?{" "}
-            <Link
-              to="/register/tutor"
-              className="text-blue-600 hover:underline"
-            >
+            <Link to="/register/tutor" className="text-blue-600 hover:underline">
               Apply as Tutor
             </Link>
           </p>

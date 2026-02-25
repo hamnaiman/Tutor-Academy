@@ -1,135 +1,118 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
 import api from "../../api/axios";
 
 export default function StudentRegister() {
-  const navigate = useNavigate();
-
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
+    studentClass: "",
+    subjects: "",
+    city: "",
+    contact: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: value.trimStart(),
+    }));
   };
 
-  const submit = async (e) => {
+  const validate = () => {
+    if (Object.values(form).some((v) => !v)) {
+      return "All fields are required";
+    }
+    if (!/^\S+@\S+\.\S+$/.test(form.email)) {
+      return "Invalid email format";
+    }
+    if (form.password.length < 8) {
+      return "Password must be at least 8 characters";
+    }
+    if (!/^\+?\d{10,15}$/.test(form.contact)) {
+      return "Invalid contact number";
+    }
+    return null;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
-    if (form.password.length < 8) {
-      return setError("Password must be at least 8 characters");
+    const err = validate();
+    if (err) {
+      setError(err);
+      return;
     }
 
+    setLoading(true);
+
     try {
-      setLoading(true);
-      await api.post("/auth/register/student", form);
-      navigate("/login");
+      await api.post("/auth/register/student", {
+        ...form,
+        subjects: form.subjects.split(",").map((s) => s.trim()),
+      });
+
+      setSuccess("Registration successful. Await admin approval.");
+      setForm({
+        name: "",
+        email: "",
+        password: "",
+        studentClass: "",
+        subjects: "",
+        city: "",
+        contact: "",
+      });
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-4">
-      <form
-        onSubmit={submit}
-        className="w-full max-w-md border border-slate-200 rounded-2xl p-8 shadow-lg"
-      >
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-100 mb-3">
-            <span className="text-2xl">🎓</span>
-          </div>
-          <h2 className="text-2xl font-bold text-[#0b1f3a]">
-            Student Registration
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Create your student account
-          </p>
-        </div>
+    <div className="max-w-md mx-auto p-6 bg-white shadow rounded">
+      <h2 className="text-2xl font-semibold mb-4">Student Registration</h2>
 
-        {/* Error */}
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-2 text-sm text-center">
-            {error}
-          </div>
-        )}
+      {error && <p className="text-red-600 mb-3">{error}</p>}
+      {success && <p className="text-green-600 mb-3">{success}</p>}
 
-        {/* Name */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Full Name
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            required
-            placeholder="John Doe"
-            className="w-full rounded-lg border border-slate-300 px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
-          />
-        </div>
+      <form onSubmit={handleSubmit} noValidate>
+        <Input label="Full Name" name="name" value={form.name} onChange={handleChange} />
+        <Input label="Email" name="email" type="email" value={form.email} onChange={handleChange} />
+        <Input label="Password" name="password" type="password" value={form.password} onChange={handleChange} />
+        <Input label="Class" name="studentClass" value={form.studentClass} onChange={handleChange} />
+        <Input label="Subjects (comma separated)" name="subjects" value={form.subjects} onChange={handleChange} />
+        <Input label="City" name="city" value={form.city} onChange={handleChange} />
+        <Input label="Contact Number" name="contact" value={form.contact} onChange={handleChange} />
 
-        {/* Email */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Email Address
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            required
-            placeholder="student@example.com"
-            className="w-full rounded-lg border border-slate-300 px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
-          />
-        </div>
-
-        {/* Password */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Password
-          </label>
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            placeholder="Minimum 8 characters"
-            className="w-full rounded-lg border border-slate-300 px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
-          />
-        </div>
-
-        {/* Submit */}
         <button
+          type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-[#0b1f3a] hover:bg-[#102a4d] transition text-white font-semibold py-2 shadow-md disabled:opacity-60"
+          className="w-full mt-4 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
         >
-          {loading ? "Creating Account..." : "Register"}
+          {loading ? "Registering..." : "Register"}
         </button>
-
-        {/* Footer */}
-        <p className="text-center text-sm text-slate-600 mt-6">
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            className="font-semibold text-amber-600 hover:text-amber-700 transition"
-          >
-            Login
-          </Link>
-        </p>
       </form>
+    </div>
+  );
+}
+
+function Input({ label, ...props }) {
+  return (
+    <div className="mb-3">
+      <label className="block text-sm font-medium mb-1">{label}</label>
+      <input
+        {...props}
+        required
+        className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
     </div>
   );
 }

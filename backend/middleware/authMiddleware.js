@@ -21,23 +21,17 @@ export const protect = async (req, res, next) => {
 
     /* 🔒 BLOCK CHECK */
     if (user.isBlocked) {
-      return res.status(403).json({
-        message: "Your account has been blocked by admin",
-      });
+      return res.status(403).json({ message: "Your account has been blocked by admin" });
     }
 
-    /* 🔒 EMAIL VERIFICATION CHECK (Tutor/Admin) */
-    if (user.role !== "student" && !user.emailVerified) {
-      return res.status(403).json({
-        message: "Please verify your email first",
-      });
+    /* 🔒 EMAIL VERIFICATION CHECK (Only tutors) */
+    if (user.role === "tutor" && !user.emailVerified) {
+      return res.status(403).json({ message: "Please verify your email first" });
     }
 
     /* 🔒 TUTOR APPROVAL CHECK */
     if (user.role === "tutor" && !user.isApproved) {
-      return res.status(403).json({
-        message: "Your account is pending admin approval",
-      });
+      return res.status(403).json({ message: "Your account is pending admin approval" });
     }
 
     req.user = user;
@@ -46,6 +40,7 @@ export const protect = async (req, res, next) => {
     return res.status(401).json({ message: "Token invalid or expired" });
   }
 };
+
 
 /* ================= AUTHORIZE ================= */
 export const authorize = (...roles) => {

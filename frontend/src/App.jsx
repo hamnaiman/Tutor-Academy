@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
@@ -37,17 +37,31 @@ export default function App() {
 
         {/* ================= STUDENT ================= */}
         <Route
-          path="/student"
+          path="/student/dashboard"
           element={
             <ProtectedRoute role="student">
               <StudentDashboard />
             </ProtectedRoute>
           }
-        >
-          <Route index element={<Navigate to="create" replace />} />
-          <Route path="create" element={<CreateRequirement />} />
-          <Route path="my-requirements" element={<MyRequirements />} />
-        </Route>
+        />
+
+        <Route
+          path="/student/create"
+          element={
+            <ProtectedRoute role="student">
+              <CreateRequirement />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/student/my-requirements"
+          element={
+            <ProtectedRoute role="student">
+              <MyRequirements />
+            </ProtectedRoute>
+          }
+        />
 
         {/* ================= TUTOR ================= */}
         <Route

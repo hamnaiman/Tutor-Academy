@@ -153,26 +153,27 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    /* 🔒 BLOCKED USER CHECK */
-    if (user.isBlocked) {
-      return res.status(403).json({
-        message: "Your account has been blocked by admin",
-      });
-    }
+    /* 🔒 BLOCKED USER CHECK (ALL ROLES) */
+if (user.isBlocked) {
+  return res.status(403).json({
+    message: "Your account has been blocked by admin",
+  });
+}
 
-    /* 🔒 EMAIL VERIFICATION CHECK (Tutor/Admin) */
-    if (user.role !== "student" && !user.emailVerified) {
-      return res.status(403).json({
-        message: "Please verify your email first",
-      });
-    }
+/* 🔒 EMAIL VERIFICATION (ONLY TUTOR) */
+if (user.role === "tutor" && !user.emailVerified) {
+  return res.status(403).json({
+    message: "Please verify your email first",
+  });
+}
 
-    /* 🔒 TUTOR APPROVAL CHECK */
-    if (user.role === "tutor" && !user.isApproved) {
-      return res.status(403).json({
-        message: "Your account is pending admin approval",
-      });
-    }
+/* 🔒 ADMIN APPROVAL (STUDENT + TUTOR) */
+if ((user.role === "student" || user.role === "tutor") && !user.isApproved) {
+  return res.status(403).json({
+    message: "Your account is pending admin approval",
+  });
+}
+
 
     let profileCompleted = true;
 
