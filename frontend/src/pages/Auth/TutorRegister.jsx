@@ -7,6 +7,7 @@ export default function TutorRegister() {
     email: "",
     password: "",
     phone: "",
+    city: "",
     subjects: "",
     experienceYears: "",
     bio: "",
@@ -27,11 +28,35 @@ export default function TutorRegister() {
 
     try {
       setLoading(true);
+
       await api.post("/auth/register/tutor", {
-        ...form,
-        subjects: form.subjects.split(","),
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        phone: form.phone,
+        city: form.city, // ✅ required field added
+        subjects: form.subjects
+          ? form.subjects.split(",").map((s) => s.trim())
+          : [],
+        experienceYears: form.experienceYears
+          ? Number(form.experienceYears)
+          : 0,
+        bio: form.bio,
       });
+
       setSuccess("Your application has been submitted for admin approval.");
+
+      // Reset form after success
+      setForm({
+        name: "",
+        email: "",
+        password: "",
+        phone: "",
+        city: "",
+        subjects: "",
+        experienceYears: "",
+        bio: "",
+      });
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
     } finally {
@@ -65,38 +90,35 @@ export default function TutorRegister() {
           </div>
         )}
 
-        {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Full Name" name="name" onChange={handleChange} />
-          <Input label="Email Address" name="email" type="email" onChange={handleChange} />
-          <Input label="Phone Number" name="phone" onChange={handleChange} />
-          <Input
-            label="Password"
-            name="password"
-            type="password"
-            onChange={handleChange}
-          />
+          <Input label="Full Name" name="name" value={form.name} onChange={handleChange} />
+          <Input label="Email Address" name="email" type="email" value={form.email} onChange={handleChange} />
+          <Input label="Phone Number" name="phone" value={form.phone} onChange={handleChange} />
+          <Input label="City" name="city" value={form.city} onChange={handleChange} />
+          <Input label="Password" name="password" type="password" value={form.password} onChange={handleChange} />
           <Input
             label="Subjects"
             name="subjects"
             placeholder="Math, Physics, Chemistry"
+            value={form.subjects}
             onChange={handleChange}
           />
           <Input
             label="Experience (Years)"
             name="experienceYears"
             type="number"
+            value={form.experienceYears}
             onChange={handleChange}
           />
         </div>
 
-        {/* Bio */}
         <div className="mt-4">
           <label className="block text-sm text-slate-600 mb-1">
             Short Bio
           </label>
           <textarea
             name="bio"
+            value={form.bio}
             rows="4"
             onChange={handleChange}
             placeholder="Brief introduction about your teaching experience"
@@ -104,7 +126,6 @@ export default function TutorRegister() {
           />
         </div>
 
-        {/* Button */}
         <button
           disabled={loading}
           className="mt-6 w-full rounded-lg bg-[#0b1f3a] hover:bg-[#102a4d] transition text-white font-semibold py-2 disabled:opacity-60"
@@ -116,14 +137,15 @@ export default function TutorRegister() {
   );
 }
 
-/* ================= Reusable Input ================= */
-function Input({ label, name, type = "text", placeholder, onChange }) {
+/* Reusable Input */
+function Input({ label, name, type = "text", placeholder, value, onChange }) {
   return (
     <div>
       <label className="block text-sm text-slate-600 mb-1">{label}</label>
       <input
         type={type}
         name={name}
+        value={value}
         placeholder={placeholder}
         onChange={onChange}
         required

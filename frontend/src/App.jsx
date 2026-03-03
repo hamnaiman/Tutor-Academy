@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
@@ -12,7 +12,13 @@ import ResetPassword from "./pages/Auth/ResetPassword";
 /* Dashboards */
 import StudentDashboard from "./pages/Student/Dashboard";
 import TutorDashboard from "./pages/Tutor/Dashboard";
-import AdminDashboard from "./pages/Admin/Dashboard";
+
+/* Admin Pages */
+import AdminLayout from "./pages/Admin/AdminLayout";
+import DashboardHome from "./pages/Admin/Dashboard";
+import UsersPage from "./pages/Admin/UsersPage";
+import PostsPage from "./pages/Admin/PostsPage";
+import RequestsPage from "./pages/Admin/RequestsPage";
 
 /* Student Pages */
 import CreateRequirement from "./pages/Student/CreateRequirement";
@@ -25,6 +31,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Routes>
+
         {/* ================= PUBLIC ================= */}
         <Route path="/" element={<PublicDashboard />} />
 
@@ -44,7 +51,6 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/student/create"
           element={
@@ -53,7 +59,6 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/student/my-requirements"
           element={
@@ -75,15 +80,25 @@ export default function App() {
 
         {/* ================= ADMIN ================= */}
         <Route
-          path="/admin/dashboard"
+          path="/admin"
           element={
             <ProtectedRoute role="admin">
-              <AdminDashboard />
+              <AdminLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          {/* 👇 DEFAULT DASHBOARD */}
+          <Route index element={<DashboardHome />} />
 
-        {/* ================= 404 ================= */}
+          <Route path="users" element={<UsersPage />} />
+          <Route path="posts" element={<PostsPage />} />
+          <Route path="requests" element={<RequestsPage />} />
+
+          {/* 👇 INVALID ADMIN ROUTES REDIRECT */}
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Route>
+
+        {/* ================= GLOBAL 404 ================= */}
         <Route
           path="*"
           element={
@@ -92,6 +107,7 @@ export default function App() {
             </div>
           }
         />
+
       </Routes>
     </AuthProvider>
   );

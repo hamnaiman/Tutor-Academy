@@ -1,231 +1,139 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
-export default function AdminDashboard() {
+export default function DashboardHome() {
   const [stats, setStats] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [posts, setPosts] = useState([]);
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  /* ================= FETCH ALL ================= */
-  const fetchAll = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No token found. Please login again.");
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
-
-      const [dashboardRes, usersRes, postsRes, requestsRes] = await Promise.all([
-        api.get("/admin/dashboard", config),
-        api.get("/admin/users/pending", config),
-        api.get("/admin/posts/pending", config),
-        api.get("/admin/requests/pending", config),
-      ]);
-
-      setStats(dashboardRes.data.stats);
-      setUsers(usersRes.data.pendingUsers);
-      setPosts(postsRes.data.posts);
-      setRequests(requestsRes.data.requests);
-    } catch (err) {
-      console.error("Admin Dashboard Fetch Error:", err);
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Failed to fetch admin data"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [chartData, setChartData] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchAll();
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await api.get("/admin/dashboard", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setStats(res.data.stats);
+
+        setChartData([
+          { name: "Users", value: res.data.stats.totalUsers },
+          { name: "Tutors", value: res.data.stats.totalTutors },
+          { name: "Students", value: res.data.stats.totalStudents },
+          { name: "Pending Users", value: res.data.stats.pendingUsers },
+        ]);
+      } catch (err) {
+        console.error("Error fetching dashboard:", err);
+      }
+    };
+
+    fetchStats();
   }, []);
 
-  /* ================= ACTION HANDLERS ================= */
-  const action = async (url) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No token found. Please login again.");
-
-      await api.put(
-        url,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      fetchAll();
-    } catch (err) {
-      alert(err.response?.data?.message || err.message || "Action failed");
-    }
-  };
-
-  if (loading) {
-    return <div className="p-10 text-center">Loading admin dashboard...</div>;
-  }
-
-  if (error) {
+  if (!stats)
     return (
-      <div className="p-10 text-red-600 text-center">
-        {error}
+      <div className="h-full flex items-center justify-center text-lg text-gray-600">
+        Loading Dashboard...
       </div>
     );
-  }
+
+  const COLORS = ["#0a1f44", "#2563EB", "#10B981", "#F59E0B"];
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* HEADER */}
-      <header className="bg-[#0a1f44] text-white p-4 text-xl font-semibold">
-        Admin Dashboard
-      </header>
+    <div className="h-full flex flex-col gap-6">
 
-      <div className="p-4 max-w-7xl mx-auto space-y-8">
-        {/* STATS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Stat label="Total Users" value={stats.totalUsers} />
-          <Stat label="Tutors" value={stats.totalTutors} />
-          <Stat label="Students" value={stats.totalStudents} />
-          <Stat label="Pending Users" value={stats.pendingUsers} />
+      {/* ===== PROFESSIONAL HEADING ===== */}
+      <div>
+        <h2 className="text-3xl md:text-4xl font-bold text-[#0a1f44]">
+          Activity Insights
+        </h2>
+        <p className="text-gray-500 mt-1">
+          Monitor platform growth, engagement & user distribution
+        </p>
+      </div>
+
+      {/* ===== MAIN GRID ===== */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* ==== PIE CHART (LEFT SIDE LARGE SCREEN) ==== */}
+        <div className="bg-white rounded-xl shadow p-6 flex flex-col">
+          <h3 className="text-xl font-semibold mb-4 text-[#0a1f44]">
+            User Distribution
+          </h3>
+
+          <div className="flex-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius="75%"
+                  label
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend verticalAlign="bottom" />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        {/* PENDING USERS */}
-        <Section title="Pending Users">
-          <Table
-            headers={["Name", "Email", "Role", "Actions"]}
-            rows={users.map((u) => ({
-              key: u._id,
-              cells: [
-                u.name,
-                u.email,
-                u.role,
-                <Actions
-                  onApprove={() => action(`/admin/users/${u._id}/approve`)}
-                  onReject={() => action(`/admin/users/${u._id}/reject`)}
-                />,
-              ],
-            }))}
+        {/* ==== STATS CARDS (RIGHT SIDE LARGE SCREEN) ==== */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <StatCard
+            label="Total Users"
+            value={stats.totalUsers}
+            onClick={() => navigate("/admin/users")}
+            color="#0a1f44"
           />
-        </Section>
+          <StatCard
+            label="Tutors"
+            value={stats.totalTutors}
+            onClick={() => navigate("/admin/posts")}
+            color="#2563EB"
+          />
+          <StatCard
+            label="Students"
+            value={stats.totalStudents}
+            onClick={() => navigate("/admin/requests")}
+            color="#10B981"
+          />
+          <StatCard
+            label="Pending Users"
+            value={stats.pendingUsers}
+            onClick={() => navigate("/admin/users")}
+            color="#F59E0B"
+          />
+        </div>
 
-        {/* PENDING POSTS */}
-        <Section title="Pending Tutor Posts">
-          <Table
-            headers={["Tutor", "Email", "Actions"]}
-            rows={posts.map((p) => ({
-              key: p._id,
-              cells: [
-                p.tutor?.name,
-                p.tutor?.email,
-                <Actions
-                  onApprove={() => action(`/admin/posts/${p._id}/approve`)}
-                  onReject={() => action(`/admin/posts/${p._id}/reject`)}
-                />,
-              ],
-            }))}
-          />
-        </Section>
-
-        {/* PENDING REQUESTS */}
-        <Section title="Pending Student Requests">
-          <Table
-            headers={["Student", "Email", "Actions"]}
-            rows={requests.map((r) => ({
-              key: r._id,
-              cells: [
-                r.student?.name,
-                r.student?.email,
-                <Actions
-                  onApprove={() => action(`/admin/requests/${r._id}/approve`)}
-                  onReject={() => action(`/admin/requests/${r._id}/reject`)}
-                />,
-              ],
-            }))}
-          />
-        </Section>
       </div>
     </div>
   );
 }
 
-/* ================= REUSABLE COMPONENTS ================= */
-
-function Stat({ label, value }) {
+/* ================= STAT CARD ================= */
+function StatCard({ label, value, onClick, color }) {
   return (
-    <div className="bg-white shadow rounded p-4 text-center">
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="text-2xl font-semibold text-[#0a1f44]">{value}</p>
-    </div>
-  );
-}
-
-function Section({ title, children }) {
-  return (
-    <div className="bg-white shadow rounded p-4">
-      <h3 className="text-lg font-semibold mb-3 text-[#0a1f44]">{title}</h3>
-      {children}
-    </div>
-  );
-}
-
-function Table({ headers, rows }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border">
-        <thead className="bg-gray-200">
-          <tr>
-            {headers.map((h) => (
-              <th key={h} className="p-2 text-left border">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan={headers.length} className="p-3 text-center text-gray-500">
-                No data
-              </td>
-            </tr>
-          )}
-          {rows.map((r) => (
-            <tr key={r.key} className="border-t">
-              {r.cells.map((c, i) => (
-                <td key={i} className="p-2 border">{c}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function Actions({ onApprove, onReject }) {
-  return (
-    <div className="flex gap-2">
-      <button
-        onClick={onApprove}
-        className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
-      >
-        Approve
-      </button>
-      <button
-        onClick={onReject}
-        className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
-      >
-        Reject
-      </button>
+    <div
+      onClick={onClick}
+      className="cursor-pointer bg-white p-6 rounded-xl shadow hover:shadow-xl transition transform hover:-translate-y-1"
+      style={{ borderTop: `4px solid ${color}` }}
+    >
+      <p className="text-gray-500">{label}</p>
+      <p className="text-3xl font-bold mt-2 text-[#0a1f44]">
+        {value}
+      </p>
     </div>
   );
 }
